@@ -77,14 +77,28 @@ func copyModule(oldNode, newNode *Node,
 	dstFile.Write([]byte(")"))
 }
 
+func openFile(fname string) (*os.File, *Node, error) {
+	f, err := os.Open(fname)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	root, err := Parse(f)
+	if err != nil {
+		return nil, root, err
+	}
+
+	return f, root, nil
+}
+
 func main() {
-	f, err := os.Open(os.Args[1])
+	f, root, err := openFile(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
 
-	f2, err := os.Open(os.Args[2])
+	f2, root2, err := openFile(os.Args[2])
 	if err != nil {
 		panic(err)
 	}
@@ -95,12 +109,6 @@ func main() {
 		panic(err)
 	}
 	defer f3.Close()
-
-	root, err := Parse(f)
-	_ = err
-
-	root2, err := Parse(f2)
-	_ = err
 
 	r1 := root.Children[0].Children
 	r2 := root2.Children[0].Children
@@ -174,5 +182,22 @@ func main() {
 	_, err = io.Copy(f3, f2)
 	if err != nil {
 		panic(err)
+	}
+
+	// parse output to ensure it matches
+	f3.Seek(0, 0)
+	r3, err := Parse(f3)
+	if err != nil {
+		panic(err)
+	}
+
+	expectedHash := root2.Hash()
+	outputHash := r3.Hash()
+
+	if outputHash != expectedHash {
+		fmt.Printf("output file has incorrect hash %08x (expected %08x)\n",
+			outputHash, expectedHash)
+	} else {
+		fmt.Printf("Done.\n")
 	}
 }
