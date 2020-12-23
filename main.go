@@ -77,6 +77,38 @@ func copyModule(oldNode, newNode *Node,
 	dstFile.Write([]byte(")"))
 }
 
+func copyFile(src, dst string) error {
+	srcf, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcf.Close()
+
+	st, err := srcf.Stat()
+	if err != nil {
+		return err
+	}
+
+	dstf, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(dstf, srcf)
+	if err != nil {
+		dstf.Close()
+		return err
+	}
+
+	dstf.Close()
+
+	// keep the mtime of copy
+	mtime := st.ModTime()
+	os.Chtimes(dst, mtime, mtime)
+
+	return nil
+}
+
 func openFile(fname string) (*os.File, *Node, error) {
 	f, err := os.Open(fname)
 	if err != nil {
@@ -98,13 +130,26 @@ func main() {
 	}
 	defer f.Close()
 
-	f2, root2, err := openFile(os.Args[2])
+	targetFname := os.Args[2]
+
+	// we will rename the target to ".orig", and use that subsequently
+	origFname := targetFname + ".orig"
+	if _, err := os.Stat(origFname); os.IsNotExist(err) {
+		err = copyFile(targetFname, origFname)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// open the ".orig" file as target
+	f2, root2, err := openFile(origFname)
 	if err != nil {
 		panic(err)
 	}
 	defer f2.Close()
 
-	f3, err := os.Create(os.Args[2] + ".up")
+	// output will now be the file user specified
+	f3, err := os.Create(targetFname)
 	if err != nil {
 		panic(err)
 	}
