@@ -1,10 +1,16 @@
 package main
 
 import (
+	"bytes"
+	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"os/exec"
 )
+
+var useGit = flag.Bool("git", false, "retrieve reference version from Git")
 
 func removeElem(list []*Node, i int) []*Node {
 	copy(list[i:], list[i+1:])
@@ -123,14 +129,56 @@ func openFile(fname string) (*os.File, *Node, error) {
 	return f, root, nil
 }
 
+func checkGit() error {
+	_, err := exec.Command("git", "status").Output()
+	return err
+}
+
 func main() {
-	f, root, err := openFile(os.Args[1])
+	flag.Parse()
+	args := flag.Args()
+
+	srcFname := ""
+
+	if *useGit {
+		err := checkGit()
+		if err != nil {
+			fmt.Println("git not found, or not in a git repository")
+			return
+		}
+
+		targetFname := args[0]
+		srcFile, err := ioutil.TempFile("", targetFname+"-git.*")
+		if err != nil {
+			panic(err)
+		}
+		srcFname = srcFile.Name()
+		defer os.Remove(srcFname)
+
+		cmd := exec.Command("git", "show", "HEAD:"+targetFname)
+		cmd.Stdout = srcFile
+
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+
+		if err = cmd.Run(); err != nil {
+			fmt.Println("cannot get reference file from git")
+			fmt.Println(stderr.String())
+			return
+		}
+
+		srcFile.Close()
+	} else {
+		srcFname, args = args[0], args[1:]
+	}
+
+	f, root, err := openFile(srcFname)
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
 
-	targetFname := os.Args[2]
+	targetFname, args := args[0], args[1:]
 
 	// we will rename the target to ".orig", and use that subsequently
 	origFname := targetFname + ".orig"
