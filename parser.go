@@ -5,6 +5,7 @@ import (
 	"hash/crc32"
 	"io"
 	"sort"
+	"strings"
 	"text/scanner"
 )
 
@@ -38,6 +39,17 @@ func (n *Node) Id() string {
 	}
 
 	return n.Children[0].Content
+}
+
+// Gets the short id of this node.
+// A short id stops at any space characters, so it would look like "fp_text".
+func (n *Node) ShortId() string {
+	id := n.Id()
+	i := strings.IndexRune(id, ' ')
+	if i >= 0 {
+		return id[:i]
+	}
+	return id
 }
 
 // Checks if this Node id matches the provided id string

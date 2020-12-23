@@ -62,13 +62,51 @@ func copyModule(oldNode, newNode *Node,
 			}
 		}
 
-		if matchingNode != nil {
-			if n.StartPos-n.SpaceStart > 100 {
-				fmt.Printf("ws anomaly %+v\n", n)
+		copyNew := false
+
+		// try a fuzzy match by node id here
+		shortId := n.ShortId()
+		nodeId := n.Id()
+
+		if matchingNode == nil && shortId != "fp_line" {
+			for i := 0; i < len(newNodes); i++ {
+				if nodeId == newNodes[i].Id() {
+					matchingNode = newNodes[i]
+					newNodes = removeElem(newNodes, i)
+					copyNew = true
+					break
+				}
+			}
+		}
+
+		if matchingNode == nil {
+			// these short ids are unique
+			uniqId := false
+			switch shortId {
+			case "layer", "tedit", "tstamp", "at", "descr", "tags", "path", "attr":
+				uniqId = true
 			}
 
-			oldFile.Seek(int64(n.SpaceStart), 0)
-			io.CopyN(dstFile, oldFile, int64(n.EndPos-n.SpaceStart+1))
+			if uniqId {
+				for i := 0; i < len(newNodes); i++ {
+					if shortId == newNodes[i].ShortId() {
+						matchingNode = newNodes[i]
+						newNodes = removeElem(newNodes, i)
+						copyNew = true
+						break
+					}
+				}
+			}
+		}
+
+		if matchingNode != nil {
+			if copyNew {
+				newFile.Seek(int64(matchingNode.SpaceStart), 0)
+				io.CopyN(dstFile, newFile, int64(matchingNode.EndPos-matchingNode.SpaceStart+1))
+			} else {
+				oldFile.Seek(int64(n.SpaceStart), 0)
+				io.CopyN(dstFile, oldFile, int64(n.EndPos-n.SpaceStart+1))
+			}
 		}
 
 		// if we can't find the matching new node, skip it
