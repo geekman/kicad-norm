@@ -12,9 +12,10 @@ import (
 
 var useGit = flag.Bool("git", false, "retrieve reference version from Git")
 
-func removeElem(list []*Node, i int) []*Node {
+func removeElem(list []*Node, i int) (*Node, []*Node) {
+	n := list[i]
 	copy(list[i:], list[i+1:])
-	return list[:len(list)-1]
+	return n, list[:len(list)-1]
 }
 
 func findModule(src *Node, list []*Node) int {
@@ -55,8 +56,7 @@ func copyModule(oldNode, newNode *Node,
 		var matchingNode *Node
 		for i := 0; i < len(newNodes); i++ {
 			if n.Hash() == newNodes[i].Hash() {
-				matchingNode = newNodes[i]
-				newNodes = removeElem(newNodes, i)
+				matchingNode, newNodes = removeElem(newNodes, i)
 
 				//fmt.Printf("  %q [MATCHES]\n", n.Id())
 			}
@@ -71,8 +71,7 @@ func copyModule(oldNode, newNode *Node,
 		if matchingNode == nil && shortId != "fp_line" {
 			for i := 0; i < len(newNodes); i++ {
 				if nodeId == newNodes[i].Id() {
-					matchingNode = newNodes[i]
-					newNodes = removeElem(newNodes, i)
+					matchingNode, newNodes = removeElem(newNodes, i)
 					copyNew = true
 					break
 				}
@@ -90,8 +89,7 @@ func copyModule(oldNode, newNode *Node,
 			if uniqId {
 				for i := 0; i < len(newNodes); i++ {
 					if shortId == newNodes[i].ShortId() {
-						matchingNode = newNodes[i]
-						newNodes = removeElem(newNodes, i)
+						matchingNode, newNodes = removeElem(newNodes, i)
 						copyNew = true
 						break
 					}
@@ -275,7 +273,7 @@ func main() {
 				changed = true
 			}
 
-			r1 = removeElem(r1, i)
+			_, r1 = removeElem(r1, i)
 		}
 
 		if n1 != nil && !changed {
