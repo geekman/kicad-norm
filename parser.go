@@ -19,6 +19,7 @@ type Node struct {
 	hash uint32
 
 	SpaceStart       int // preceding whitespace
+	PreEndSpace      int // whitespace before EndPos
 	StartPos, EndPos int
 }
 
@@ -192,6 +193,8 @@ func (n *Node) ScanWhitespace() {
 		c.SpaceStart = lastPos
 		lastPos = c.EndPos + 1
 	}
+
+	n.PreEndSpace = lastPos
 }
 
 // Updates the position of the last token

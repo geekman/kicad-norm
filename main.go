@@ -117,7 +117,9 @@ func copyModule(oldNode, newNode *Node,
 		io.CopyN(dstFile, newFile, int64(n.EndPos-n.SpaceStart+1))
 	}
 
-	dstFile.Write([]byte(")"))
+	// write out whitespace and close bracket
+	oldFile.Seek(int64(oldNode.PreEndSpace), 0)
+	io.CopyN(dstFile, oldFile, int64(oldNode.EndPos-oldNode.PreEndSpace+1))
 }
 
 func copyFile(src, dst string) error {
