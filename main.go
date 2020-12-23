@@ -57,6 +57,7 @@ func copyModule(oldNode, newNode *Node,
 		for i := 0; i < len(newNodes); i++ {
 			if n.Hash() == newNodes[i].Hash() {
 				matchingNode, newNodes = removeElem(newNodes, i)
+				break
 
 				//fmt.Printf("  %q [MATCHES]\n", n.Id())
 			}
