@@ -8,7 +8,33 @@ This utility tries to "normalize" the files by preserving the previous file
 version as much as possible, making sure the diff is as compact and possible
 for humans to read.
 
+Installation
+=============
 
+    $ go get -v github.com/geekman/kicad-norm
+
+Usage
+======
+
+After editing and saving with KiCad, run `kicad-norm` to normalize the changes.
+Assuming your project is kept under source control with Git:
+
+    kicad-norm -git my-proj.kicad_pcb
+
+This will copy `my-proj.kicad_pcb` to `my-proj.kicad_pcb.orig` first, 
+then extract the previous version of the file from `HEAD` and use that as a
+reference to normalize changes into `my-proj.kicad_pcb`, thereby overwriting
+the destination file.
+
+If you are not using Git, or want to do it manaully:
+
+```sh
+# get the previous file version
+git show HEAD:my-proj.kicad_pcb > my-proj.kicad_pcb-old
+
+# normalize it
+kicad-norm my-proj.kicad_pcb-old my-proj.kicad_pcb
+```
 
 License
 ========
