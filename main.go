@@ -235,6 +235,22 @@ func main() {
 	}
 	defer f2.Close()
 
+	// before we overwrite target file, make sure that targetFile and ".orig"
+	// file are actually identical. this operation is supposed to be idempotent.
+	f2a, root2a, err := openFile(targetFname)
+	if err != nil && !os.IsNotExist(err) {
+		panic(err)
+	} else {
+		f2a.Close()
+
+		if root2.Hash() != root2a.Hash() {
+			fmt.Printf(`%q contents differ from %q!
+%[1]q could be from a previous run, and if so, please delete it first.`,
+				targetFname, origFname)
+			return
+		}
+	}
+
 	// output will now be the file user specified
 	f3, err := os.Create(targetFname)
 	if err != nil {
