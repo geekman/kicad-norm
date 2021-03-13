@@ -11,6 +11,7 @@ import (
 )
 
 var useGit = flag.Bool("git", false, "retrieve reference version from Git")
+var outputFile = flag.String("output", "", "explicit output filename")
 
 func removeElem(list []*Node, i int) (*Node, []*Node) {
 	n := list[i]
@@ -226,40 +227,56 @@ func main() {
 
 	targetFname, args := args[0], args[1:]
 
-	// we will rename the target to ".orig", and use that subsequently
-	origFname := targetFname + ".orig"
-	if _, err := os.Stat(origFname); os.IsNotExist(err) {
-		err = copyFile(targetFname, origFname)
+	// determine the output filename
+	if *outputFile == "" {
+		*outputFile = targetFname
+	}
+
+	var f2 *os.File
+	var root2 *Node
+
+	if *outputFile == targetFname {
+		// we will rename the target to ".orig", and use that subsequently
+		origFname := targetFname + ".orig"
+		if _, err := os.Stat(origFname); os.IsNotExist(err) {
+			err = copyFile(targetFname, origFname)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		// open the ".orig" file as target
+		f2, root2, err = openFile(origFname)
 		if err != nil {
 			panic(err)
 		}
-	}
+		defer f2.Close()
 
-	// open the ".orig" file as target
-	f2, root2, err := openFile(origFname)
-	if err != nil {
-		panic(err)
-	}
-	defer f2.Close()
+		// before we overwrite target file, make sure that targetFile and ".orig"
+		// file are actually identical. this operation is supposed to be idempotent.
+		f2a, root2a, err := openFile(targetFname)
+		if err != nil && !os.IsNotExist(err) {
+			panic(err)
+		} else {
+			f2a.Close()
 
-	// before we overwrite target file, make sure that targetFile and ".orig"
-	// file are actually identical. this operation is supposed to be idempotent.
-	f2a, root2a, err := openFile(targetFname)
-	if err != nil && !os.IsNotExist(err) {
-		panic(err)
-	} else {
-		f2a.Close()
-
-		if root2.Hash() != root2a.Hash() {
-			fmt.Printf(`%q contents differ from %q!
-%[1]q could be from a previous run, and if so, please delete it first.`,
-				targetFname, origFname)
-			return
+			if root2.Hash() != root2a.Hash() {
+				fmt.Printf("%q contents differ from %q!\n"+
+					"%[1]q could be from a previous run, and if so, please delete it first.",
+					targetFname, origFname)
+				return
+			}
 		}
+	} else {
+		f2, root2, err = openFile(targetFname)
+		if err != nil {
+			panic(err)
+		}
+		defer f2.Close()
 	}
 
 	// output will now be the file user specified
-	f3, err := os.Create(targetFname)
+	f3, err := os.Create(*outputFile)
 	if err != nil {
 		panic(err)
 	}
