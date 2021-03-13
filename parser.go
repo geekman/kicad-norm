@@ -100,7 +100,7 @@ func (n *Node) Hash() uint32 {
 		return n.hash
 	}
 
-	contents := ""
+	contents := n.Content
 	nodeHashes := []uint32{}
 
 	for _, c := range n.Children {

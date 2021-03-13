@@ -93,3 +93,30 @@ func TestHash(t *testing.T) {
 		t.Logf("%x", n.Hash())
 	}
 }
+
+// Test that leaf nodes (that just have text content) have hashes
+func TestHashLeafValue(t *testing.T) {
+	tests := []string{
+		"(foo bar)",
+		"(foo )",
+	}
+
+	for _, s := range tests {
+		r := strings.NewReader(s)
+		n, err := Parse(r)
+		if err != nil {
+			panic(err)
+		}
+
+		// get first node from root
+		n = n.Children[0]
+
+		// leaf nodes
+		for _, c := range n.Children {
+			t.Logf("%+v -> %x", c, c.Hash())
+			if c.Hash() == 0 {
+				t.Fatalf("node %+v has hash!", c)
+			}
+		}
+	}
+}
