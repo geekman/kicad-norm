@@ -38,6 +38,13 @@ func findModule(src *Node, list []*Node) int {
 	return -1
 }
 
+// Copies a Node verbatim from srcFile into dstFile
+func copyNode(n *Node, srcFile io.ReadSeeker, dstFile io.Writer) error {
+	srcFile.Seek(int64(n.StartPos), 0)
+	_, err := io.CopyN(dstFile, srcFile, int64(n.EndPos-n.StartPos+1))
+	return err
+}
+
 func copyModule(oldNode, newNode *Node,
 	oldFile, newFile io.ReadSeeker, dstFile io.Writer) {
 
@@ -297,9 +304,7 @@ func main() {
 
 		if n1 != nil && !changed {
 			// use unchanged Node
-			f.Seek(int64(n1.StartPos), 0)
-			_, err := io.CopyN(f3, f, int64(n1.EndPos-n1.StartPos+1))
-			if err != nil {
+			if err = copyNode(n1, f, f3); err != nil {
 				panic(err)
 			}
 		} else if n1 != nil {
@@ -308,9 +313,7 @@ func main() {
 			copyModule(n1, n2, f, f2, f3)
 		} else {
 			// copy this new Node
-			f2.Seek(int64(n2.StartPos), 0)
-			_, err := io.CopyN(f3, f2, int64(n2.EndPos-n2.StartPos+1))
-			if err != nil {
+			if err = copyNode(n2, f2, f3); err != nil {
 				panic(err)
 			}
 		}
