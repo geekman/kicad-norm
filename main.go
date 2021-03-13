@@ -56,7 +56,9 @@ func copyModule(oldNode, newNode *Node,
 	dstFile.Write([]byte("("))
 
 	// make a copy
-	newNodes := newNode.Children
+	newNodes := make([]*Node, len(newNode.Children))
+	copy(newNodes[:], newNode.Children)
+
 	for _, n := range oldNode.Children {
 		//n.Dump(0)
 
