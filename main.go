@@ -21,6 +21,12 @@ func removeElem(list []*Node, i int) (*Node, []*Node) {
 
 func findModule(src *Node, list []*Node) int {
 	id := src.Id()
+	shortId := src.ShortId()
+
+	pathId := ""
+	if path := src.FindChild("path"); path != nil {
+		pathId = path.Id()
+	}
 
 	for i, n := range list {
 		if n.Id() == id {
@@ -30,7 +36,17 @@ func findModule(src *Node, list []*Node) int {
 			}
 
 			// match by path
-			if n.FindChild("path").Id() == src.FindChild("path").Id() {
+			if pathId != "" && n.FindChild("path").Id() == pathId {
+				return i
+			}
+		}
+	}
+
+	// if nothing was found on the first pass, try searching
+	// using path value + short ID
+	for i, n := range list {
+		if n.ShortId() == shortId {
+			if pathId != "" && n.FindChild("path").Id() == pathId {
 				return i
 			}
 		}
