@@ -11,6 +11,7 @@ import (
 )
 
 var useGit = flag.Bool("git", false, "retrieve reference version from Git")
+var keepOrig = flag.Bool("keep-orig", false, "keep original file after rewriting")
 var outputFile = flag.String("output", "", "explicit output filename")
 
 func removeElem(list []*Node, i int) (*Node, []*Node) {
@@ -253,6 +254,9 @@ func main() {
 	var f2 *os.File
 	var root2 *Node
 
+	// remove original file after rewriting
+	removeOrigFname := ""
+
 	if *outputFile == targetFname {
 		// we will rename the target to ".orig", and use that subsequently
 		origFname := targetFname + ".orig"
@@ -285,6 +289,8 @@ func main() {
 				return
 			}
 		}
+
+		removeOrigFname = origFname
 	} else {
 		f2, root2, err = openFile(targetFname)
 		if err != nil {
@@ -384,6 +390,16 @@ func main() {
 		fmt.Printf("output file has incorrect hash %08x (expected %08x)\n",
 			outputHash, expectedHash)
 	} else {
+		// after an equivalent file has been emitted, we can remove the original
+		if !*keepOrig && removeOrigFname != "" {
+			// close the file now
+			f2.Close()
+
+			if err := os.Remove(removeOrigFname); err != nil {
+				fmt.Printf("unable to remove orig file: %v\n", err)
+			}
+		}
+
 		fmt.Printf("Done.\n")
 	}
 }
