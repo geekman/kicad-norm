@@ -214,7 +214,7 @@ func main() {
 		}
 
 		targetFname := args[0]
-		srcFile, err := ioutil.TempFile("", targetFname+"-git.*")
+		srcFile, err := ioutil.TempFile("", "kicad-norm-git.*")
 		if err != nil {
 			panic(err)
 		}
