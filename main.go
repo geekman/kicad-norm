@@ -244,6 +244,18 @@ func main() {
 	}
 	defer f.Close()
 
+	// check file type
+	rootId := root.Children[0].ShortId()
+	switch rootId {
+	case "module":
+	case "kicad_pcb":
+		break
+
+	default:
+		fmt.Printf("unsupported file type %q\n", rootId)
+		return
+	}
+
 	targetFname, args := args[0], args[1:]
 
 	// determine the output filename
@@ -306,8 +318,18 @@ func main() {
 	}
 	defer f3.Close()
 
-	r1 := root.Children[0].Children
-	r2 := root2.Children[0].Children
+	var r1, r2 []*Node
+	switch rootId {
+	case "kicad_pcb":
+		r1 = root.Children[0].Children
+		r2 = root2.Children[0].Children
+		break
+
+	case "module":
+		r1 = root.Children
+		r2 = root2.Children
+		break
+	}
 
 	// always points within f2
 	copiedPos := 0
@@ -331,7 +353,12 @@ func main() {
 
 		var n1 *Node
 		if n2.IdMatches("module") {
-			i = findModule(n2, r1)
+			// if we're operating on a module, there's only 1 module node
+			if rootId == "module" && r1[0].Id() == n2.Id() {
+				i = 0
+			} else {
+				i = findModule(n2, r1)
+			}
 		}
 
 		if i > -1 {
