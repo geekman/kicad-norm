@@ -20,14 +20,21 @@ func removeElem(list []*Node, i int) (*Node, []*Node) {
 	return n, list[:len(list)-1]
 }
 
+// Gets the path ID for a specified Node.
+// If the Node doesn't contain a "path" node (meaning it has no path ID),
+// then an empty string is returned.
+func getPathId(n *Node) string {
+	p := n.FindChild("path")
+	if p != nil {
+		return p.Id()
+	}
+	return ""
+}
+
 func findModule(src *Node, list []*Node) int {
 	id := src.Id()
 	shortId := src.ShortId()
-
-	pathId := ""
-	if path := src.FindChild("path"); path != nil {
-		pathId = path.Id()
-	}
+	pathId := getPathId(src)
 
 	for i, n := range list {
 		if n.Id() == id {
@@ -37,7 +44,7 @@ func findModule(src *Node, list []*Node) int {
 			}
 
 			// match by path
-			if pathId != "" && n.FindChild("path").Id() == pathId {
+			if pathId != "" && getPathId(n) == pathId {
 				return i
 			}
 		}
@@ -47,7 +54,7 @@ func findModule(src *Node, list []*Node) int {
 	// using path value + short ID
 	for i, n := range list {
 		if n.ShortId() == shortId {
-			if pathId != "" && n.FindChild("path").Id() == pathId {
+			if pathId != "" && getPathId(n) == pathId {
 				return i
 			}
 		}
