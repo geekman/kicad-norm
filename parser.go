@@ -78,6 +78,16 @@ func (n *Node) FindChild(id string) *Node {
 	return nil
 }
 
+// Uses FindChild to get a matching Node, and return its id.
+// If no matching Node was found, returns an empty string.
+func (n *Node) GetChildId(id string) string {
+	c := n.FindChild(id)
+	if c != nil {
+		return c.Id()
+	}
+	return ""
+}
+
 func (n *Node) LastChild() *Node {
 	l := len(n.Children)
 	if l > 0 {

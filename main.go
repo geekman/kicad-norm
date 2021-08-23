@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 var useGit = flag.Bool("git", false, "retrieve reference version from Git")
@@ -24,11 +25,23 @@ func removeElem(list []*Node, i int) (*Node, []*Node) {
 // If the Node doesn't contain a "path" node (meaning it has no path ID),
 // then an empty string is returned.
 func getPathId(n *Node) string {
-	p := n.FindChild("path")
-	if p != nil {
-		return p.Id()
+	return n.GetChildId("path")
+}
+
+// Gets the id for an fp_text Node.
+// This is "fp_text <type>", just short of the actual string contents.
+func getTextId(n *Node) string {
+	id := n.Id()
+	l := len("fp_text ")
+	if len(id) < l {
+		return ""
 	}
-	return ""
+
+	pos := strings.IndexRune(id[l:], ' ')
+	if pos == -1 {
+		return ""
+	}
+	return id[:pos]
 }
 
 func findModule(src *Node, list []*Node) int {
@@ -105,6 +118,23 @@ func copyModule(oldNode, newNode *Node,
 		if matchingNode == nil && shortId != "fp_line" {
 			for i := 0; i < len(newNodes); i++ {
 				if nodeId == newNodes[i].Id() {
+					matchingNode, newNodes = removeElem(newNodes, i)
+					copyNew = true
+					break
+				}
+			}
+		}
+
+		// if the fp_text wasn't an exact match, we try matching by location
+		if matchingNode == nil && shortId == "fp_text" {
+			textId := getTextId(n)
+			loc := n.GetChildId("at")
+			layer := n.GetChildId("layer")
+
+			for i := 0; i < len(newNodes); i++ {
+				if shortId == "fp_text" && textId == getTextId(newNodes[i]) &&
+					loc == newNodes[i].GetChildId("at") &&
+					layer == newNodes[i].GetChildId("layer") {
 					matchingNode, newNodes = removeElem(newNodes, i)
 					copyNew = true
 					break
